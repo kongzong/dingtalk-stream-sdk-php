@@ -113,16 +113,14 @@ class DingTalkStreamClient {
      * 建立 WebSocket 连接
      */
     private function establishWebSocketConnection() {
-		$url = "{$this->endpoint}?ticket={$this->ticket}";
-		//var_dump($url);exit;
-		
-		$this->wsc = new WebSocket\Client($url);
-		
-		$this->isConnected = true;
-		$this->log("WebSocket connection established");
-		
-		
-	}
+	$url = "{$this->endpoint}?ticket={$this->ticket}";
+	
+	$this->wsc = new WebSocket\Client($url);
+	
+	$this->isConnected = true;
+	$this->log("WebSocket connection established");
+
+    }
 	
     
     /**
@@ -135,14 +133,6 @@ class DingTalkStreamClient {
             
             $this->handleMessage($data);
             
-            // 如果超过8秒没有收到ping，主动断开重连
-			/*
-			if (time() - $this->lastPingTime > 8) {
-                $this->log("No ping received for 8 seconds, reconnecting...");
-                $this->reconnect();
-            }
-			*/
-			
         }
     }
 	
@@ -152,9 +142,8 @@ class DingTalkStreamClient {
      * @return string|false
      */
     private function receiveData() {
-		$message = $this->wsc->receive();
-		//var_dump($message);
-		return $message;
+	$message = $this->wsc->receive();
+	return $message;
     }
     
     /**
@@ -163,14 +152,8 @@ class DingTalkStreamClient {
      */
     private function handleMessage($data) {
 		
-		$this->log("handleMessage...");
-		//var_dump($data);
-		
-		
+	$this->log("handleMessage...");
         $message = json_decode($data, true);
-		
-		
-		//var_dump($message);
         if (!$message) return;
         
         $type = $message['type'] ?? '';
@@ -179,7 +162,7 @@ class DingTalkStreamClient {
         
         switch ($type) {
             case 'SYSTEM':
-				$this->log("handleSystemMessage...");
+		$this->log("handleSystemMessage...");
                 $this->handleSystemMessage($topic, $message);
                 break;
                 
@@ -198,7 +181,7 @@ class DingTalkStreamClient {
     private function handleSystemMessage($topic, $message) {
         switch ($topic) {
             case 'ping':
-				$this->log("handlePingMessage...");
+		$this->log("handlePingMessage...");
                 $this->lastPingTime = time();
                 $this->sendPong($message);
                 break;
@@ -236,8 +219,6 @@ class DingTalkStreamClient {
             'data' => $pingMessage['data']
         ];
 		
-		//var_dump($response);
-        
         $this->sendData(json_encode($response));
     }
     
@@ -247,9 +228,8 @@ class DingTalkStreamClient {
     private function handleDisconnect() {
         $this->log("Received disconnect request from server");
         $this->isConnected = false;
-        
-		//fclose($this->ws);
-		fclose($this->wsc->socket);
+
+	fclose($this->wsc->socket);
 		
         // 重新连接
         $this->connect();
@@ -271,8 +251,6 @@ class DingTalkStreamClient {
             'data' => json_encode($result)
         ];
 		
-		//var_dump($response);
-        
         $this->sendData(json_encode($response));
     }
     
@@ -281,8 +259,7 @@ class DingTalkStreamClient {
      * @param string $data
      */
     private function sendData($data) {
-		
-		$this->wsc->send($data);		
+	$this->wsc->send($data);		
     }
     
     
@@ -291,9 +268,6 @@ class DingTalkStreamClient {
      */
     private function reconnect() {
         $this->log("Reconnecting...");
-        
-		
-		
         $this->isConnected = false;
         $this->connect();
     }
