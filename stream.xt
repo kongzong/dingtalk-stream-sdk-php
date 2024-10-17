@@ -1,0 +1,114 @@
+<?php
+set_time_limit(0);
+
+require("common.xt");
+require("dingtalk_stream_client.php");
+
+/*
+	进程保活
+	定时
+
+*/
+$lockname=$_SERVER["argv"][1];
+
+if (!$lockname) $lockname = 'default';
+
+$pfile = $G_xt_upload_root."work/ddcrm_stream_".$lockname.".pid";
+
+echo $pfile;
+
+$pid = file_get_contents($pfile);
+if (!$pid or posix_getsid($pid) === false) {
+	//进程不在，表示异常中断
+	//更新pid
+	$pid = getmypid();
+	file_put_contents($pfile,$pid);	
+	//执行
+	run();
+	
+} else {
+	echo "pid alive!!!\r\n";
+	exit;
+}
+
+
+function run() {
+	
+	if(is_ddcrm())
+	{
+		//TODO:融合环境
+		$config = [
+			'clientId' => 'SuiteKey',
+			'clientSecret' => 'SuiteSecret',
+			'debug' => true
+		];
+	}
+	else{
+		/*
+		因为建立长连接需要每个corp区分开，所以对应自建应用需要开n个（n=企业数量）连接
+		所以自建应用只用来在211上做联调，不支持运营环境，也即在crm主环境，不会启动本程序
+		
+		也可以corpid作为参数来启动
+		*/
+		//自建应用，211里调试
+		$config = [
+			'clientId' => 'ding4wj7qfiknmnwrb5s',
+			'clientSecret' => 'GvSbhyqYovm2KzF1fGtIy-xdsdZDN7LHd-zbeUNASXVR_uV0LvbAZvmvvLyeiNld',
+			'debug' => true
+		];
+	}
+    
+    $client = new DingTalkStreamClient($config);
+    
+    // 注册事件处理器
+    $client->registerHandler('EVENT', function($message) {
+        // 处理事件消息
+		/*
+		{
+		  "specVersion" : "1.0",
+		  "type" : "EVENT",
+		  "headers" : {
+			"topic" : "dingTalk",
+			"messageId" : "213d841d_972_1898bb26334_70a7",
+			"contentType" : "application/json",
+			"time" : 167123345,
+			"eventType" : "user_add_org",
+			"eventId" : "c7c7120f2c07419***ebdba0318c8",
+			"eventCorpId" : "ding9f50b15b***16741",
+			"eventBornTime" : 1683533823336,
+			"eventUnifiedAppId" : "bbb381b6-f01xxxxx58daac"  
+		   }
+		   "data" : "{\"timestamp\" : \"1685501863357\", \"userId\" : [\"015xxxx227\"]}"
+		}
+		*/
+		
+		//var_dump($message);
+		
+		include_once("ddcrm_event_class.xt");
+		$class = $message['headers']['eventType'];
+		if (class_exists($class))
+		{
+			$event = new $class($message);
+			$method = "main";
+			if (method_exists($event,$method))
+			{
+				$event->$method();		
+			}
+		}
+		
+        return ['status' => 'SUCCESS', 'message' => 'success'];
+    });
+    
+	/*回调目前无需求，暂时不支持
+    $client->registerHandler('CALLBACK', function($message) {
+        // 处理回调消息
+        return ['response' => ['message' => 'Callback processed']];
+    });
+	*/
+    
+    // 连接并开始接收消息
+    $client->connect();
+}
+
+
+
