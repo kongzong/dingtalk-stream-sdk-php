@@ -2,7 +2,6 @@
 /**
  * 钉钉 Stream PHP SDK
  * PHP 版本要求：7.0+
- * 不依赖第三方库
  */
 require("websocket_class.php");
 
@@ -20,7 +19,7 @@ class DingTalkStreamClient {
     private $isConnected = false;
     private $lastPingTime = 0;
 	
-	private $wsc;
+    private $wsc;
     
     const API_URL = 'https://api.dingtalk.com/v1.0/gateway/connections/open';
     
@@ -71,44 +70,44 @@ class DingTalkStreamClient {
      * @return bool
      */
     private function getConnectionCredentials() {
-		$data = [
-			'clientId' => $this->clientId,
-			'clientSecret' => $this->clientSecret,
-			'subscriptions' => $this->subscriptions,
-			'ua' => $this->ua
-		];
-		if ($this->localIp) {
-			$data['localIp'] = $this->localIp;
-		}
-		
-		$ch = curl_init(self::API_URL);
-		
-		curl_setopt_array($ch, [
-			CURLOPT_POST => true,
-			CURLOPT_POSTFIELDS => json_encode($data),
-			CURLOPT_RETURNTRANSFER => true,
-			CURLOPT_HTTPHEADER => [
-				'Content-Type: application/json',
-				'Accept: application/json'
-			]
-		]);
-		
-		$result = curl_exec($ch);
-		
-		if ($result === false) {
-			$this->log("Failed to get connection credentials: " . curl_error($ch));
-			curl_close($ch);
-			return false;
-		}
-		
-		curl_close($ch);
-		
-		$response = json_decode($result, true);
-		$this->endpoint = $response['endpoint'] ?? '';
-		$this->ticket = $response['ticket'] ?? '';
-		
-		return !empty($this->endpoint) && !empty($this->ticket);
+	$data = [
+		'clientId' => $this->clientId,
+		'clientSecret' => $this->clientSecret,
+		'subscriptions' => $this->subscriptions,
+		'ua' => $this->ua
+	];
+	if ($this->localIp) {
+		$data['localIp'] = $this->localIp;
 	}
+	
+	$ch = curl_init(self::API_URL);
+	
+	curl_setopt_array($ch, [
+		CURLOPT_POST => true,
+		CURLOPT_POSTFIELDS => json_encode($data),
+		CURLOPT_RETURNTRANSFER => true,
+		CURLOPT_HTTPHEADER => [
+			'Content-Type: application/json',
+			'Accept: application/json'
+		]
+	]);
+	
+	$result = curl_exec($ch);
+	
+	if ($result === false) {
+		$this->log("Failed to get connection credentials: " . curl_error($ch));
+		curl_close($ch);
+		return false;
+	}
+	
+	curl_close($ch);
+	
+	$response = json_decode($result, true);
+	$this->endpoint = $response['endpoint'] ?? '';
+	$this->ticket = $response['ticket'] ?? '';
+	
+	return !empty($this->endpoint) && !empty($this->ticket);
+    }
     
     /**
      * 建立 WebSocket 连接
